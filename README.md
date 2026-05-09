@@ -5,15 +5,14 @@ A self-hosted cloud storage app built with React + Cloudflare Workers + R2.
 ## Tech Stack
 
 - **Frontend** — React, Vite, Tailwind CSS
-- **Backend** — Cloudflare Workers, Hono
-- **Storage** — Cloudflare R2
-- **Auth** — JWT, bcrypt, Google OAuth
+- **Backend** — Cloudflare Workers, Hono Framework, JavaScript
+- **Storage** — Cloudflare R2 (files), Cloudflare KV (users & requests)
+- **Auth** — JWT, Google OAuth
 
 ---
 
 ## Project Structure
 
-```
 personal-cloud/
 ├── frontend/
 │   └── personal-cloud/
@@ -21,57 +20,65 @@ personal-cloud/
 │       ├── src/
 │       │   ├── components/
 │       │   │   ├── drive/
-│       │   │   │   ├── FileGrid.jsx        # Grid view for files
-│       │   │   │   ├── FileList.jsx        # List/table view for files
-│       │   │   │   └── UploadButton.jsx    # Upload + drag & drop + new folder
+│       │   │   │   ├── FileGrid.jsx            # Grid view for files
+│       │   │   │   ├── FileList.jsx            # List/table view for files
+│       │   │   │   └── UploadButton.jsx        # Upload + drag & drop + new folder
 │       │   │   ├── layout/
-│       │   │   │   ├── AppLayout.jsx       # Main layout wrapper
-│       │   │   │   ├── ProtectedRoute.jsx  # Redirect to login if not authenticated
-│       │   │   │   ├── Sidebar.jsx         # Left navigation sidebar
-│       │   │   │   └── TopBar.jsx          # Search bar + view toggle + logout
+│       │   │   │   ├── AppLayout.jsx           # Main layout wrapper
+│       │   │   │   ├── Footer.jsx              # Footer with version and rules
+│       │   │   │   ├── ProtectedRoute.jsx      # Redirect to login if not authenticated
+│       │   │   │   ├── Sidebar.jsx             # Left navigation sidebar
+│       │   │   │   └── TopBar.jsx              # Search bar + view toggle + logout
 │       │   │   └── ui/
-│       │   │       ├── Button.jsx          # Reusable button component
-│       │   │       ├── ContextMenu.jsx     # Right-click context menu
-│       │   │       ├── FileIcon.jsx        # File type icons with colors
-│       │   │       └── Modal.jsx           # Reusable modal dialog
+│       │   │       ├── Button.jsx              # Reusable button component
+│       │   │       ├── ContextMenu.jsx         # Right-click context menu
+│       │   │       ├── FileIcon.jsx            # File type icons with colors
+│       │   │       ├── Modal.jsx               # Reusable modal dialog
+│       │   │       └── VersionModal.jsx        # Version history modal
 │       │   ├── context/
-│       │   │   ├── AuthContext.jsx         # Auth state, login, logout
-│       │   │   └── DriveContext.jsx        # File state, upload, delete
+│       │   │   ├── AuthContext.jsx             # Auth state, login, logout
+│       │   │   └── DriveContext.jsx            # File state, upload, delete
+│       │   ├── data/
+│       │   │   └── changelog.js               # App version history
 │       │   ├── pages/
-│       │   │   ├── AuthCallbackPage.jsx    # Handles Google OAuth callback
-│       │   │   ├── LoginPage.jsx           # Login + register page
-│       │   │   ├── MyDrivePage.jsx         # Main drive with breadcrumbs
-│       │   │   ├── RecentPage.jsx          # Recently modified files
-│       │   │   ├── StarredPage.jsx         # Starred files
-│       │   │   └── TrashPage.jsx           # Trash with restore/delete
+│       │   │   ├── AdminPage.jsx              # Admin dashboard
+│       │   │   ├── AuthCallbackPage.jsx       # Handles Google OAuth callback
+│       │   │   ├── LoginPage.jsx              # Login page
+│       │   │   ├── MyDrivePage.jsx            # Main drive with breadcrumbs
+│       │   │   ├── RecentPage.jsx             # Recently modified files
+│       │   │   ├── RequestAccessPage.jsx      # Request access form for new users
+│       │   │   ├── StarredPage.jsx            # Starred files
+│       │   │   └── TrashPage.jsx              # Trash with restore/delete
 │       │   ├── services/
-│       │   │   └── r2Service.js            # All API calls to Worker
+│       │   │   ├── adminService.js            # Admin API calls
+│       │   │   └── r2Service.js               # All R2/Worker API calls
 │       │   ├── utils/
-│       │   │   └── fileUtils.js            # Format size, date, file type
-│       │   ├── App.jsx                     # Router setup
-│       │   ├── index.css                   # Tailwind + global styles
-│       │   └── main.jsx                    # React entry point
-│       ├── .env                            # Frontend env variables (gitignored)
-│       ├── .env.example                    # Example env variables
+│       │   │   └── fileUtils.js               # Format size, date, file type
+│       │   ├── App.jsx                        # Router setup
+│       │   ├── index.css                      # Tailwind + global styles
+│       │   └── main.jsx                       # React entry point
+│       ├── .env                               # Frontend env variables (gitignored)
+│       ├── .env.example                       # Example env variables
 │       ├── index.html
 │       ├── package.json
 │       └── vite.config.js
 │
 └── backend/
-    └── worker/
-        ├── src/
-        │   ├── routes/
-        │   │   ├── auth.js                 # Login, register, Google OAuth routes
-        │   │   └── files.js                # File CRUD routes
-        │   ├── auth.js                     # JWT + password hashing
-        │   ├── index.js                    # Hono app entry point
-        │   ├── middleware.js               # Auth middleware + CORS
-        │   └── r2.js                       # R2 file operations
-        ├── .dev.vars                       # Local secrets (gitignored)
-        ├── .dev.vars.example               # Example secrets
-        ├── package.json
-        └── wrangler.jsonc                  # Cloudflare Worker config
-```
+└── worker/
+├── src/
+│   ├── routes/
+│   │   ├── admin.js               # Admin routes — manage users & requests
+│   │   ├── auth.js                # Login, Google OAuth, request access
+│   │   └── files.js               # File CRUD routes
+│   ├── auth.js                    # JWT + password hashing
+│   ├── config.js                  # Centralised env config
+│   ├── index.js                   # Hono app entry point
+│   ├── middleware.js              # Auth middleware + CORS
+│   └── r2.js                      # R2 file operations
+├── .dev.vars                      # Local secrets (gitignored)
+├── .dev.vars.example              # Example secrets
+├── package.json
+└── wrangler.jsonc                 # Cloudflare Worker config
 
 ## Prerequisites
 
@@ -112,6 +119,11 @@ Create KV namespace for users:
 npx wrangler kv namespace create "USERS"
 ```
 
+Create KV namespace for requests:
+```bash
+npx wrangler kv namespace create "REQUESTS"
+```
+
 Create R2 bucket for files:
 ```bash
 npx wrangler r2 bucket create personal-cloud-files
@@ -130,22 +142,29 @@ JWT_SECRET=your_jwt_secret_here
 GOOGLE_CLIENT_ID=your_google_client_id_here
 GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 GOOGLE_REDIRECT_URI=http://localhost:8787/auth/google/callback
-
 ### 4. Google OAuth setup
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
 2. Create a new project
 3. Go to **APIs & Services** → **OAuth consent screen** → configure it
-4. Go to **Credentials** → **Create OAuth Client ID**
+4. Go to **Clients** → **Create OAuth Client ID**
 5. Application type → **Web application**
 6. Add Authorised JavaScript origins:
 
 http://localhost:5173
-
 7. Add Authorised redirect URIs:
-http://localhost:8787/auth/google/callback
 
+http://localhost:8787/auth/google/callback
 8. Copy **Client ID** and **Client Secret** into `.dev.vars`
+
+### 5. Create admin account
+
+After starting the Worker, run this once:
+```bash
+curl -X POST http://localhost:8787/auth/seed \
+  -H "Content-Type: application/json" \
+  -d "{\"username\": \"admin\", \"password\": \"yourpassword\"}"
+```
 
 ---
 
@@ -181,11 +200,22 @@ npx wrangler secret put GOOGLE_REDIRECT_URI
 npm run deploy
 ```
 
-### Deploy Frontend
-Update `.env` with your deployed Worker URL:
-VITE_WORKER_URL=https://your-worker.your-subdomain.workers.dev
+After deploying, create the admin account:
+```bash
+curl -X POST https://your-worker.your-subdomain.workers.dev/auth/seed \
+  -H "Content-Type: application/json" \
+  -d "{\"username\": \"admin\", \"password\": \"yourpassword\"}"
+```
 
-Then deploy to Cloudflare Pages via the Cloudflare dashboard or:
+Update Google OAuth redirect URI in Google Cloud Console:
+
+https://your-worker.your-subdomain.workers.dev/auth/google/callback
+### Deploy Frontend
+
+Update `.env` with your deployed Worker URL:
+
+VITE_WORKER_URL=https://your-worker.your-subdomain.workers.dev
+Build and deploy to Cloudflare Pages:
 ```bash
 npm run build
 ```
@@ -207,4 +237,40 @@ npm run build
 | `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret |
 | `GOOGLE_REDIRECT_URI` | Google OAuth redirect URI |
 
+---
 
+## Testing API
+
+```bash
+# Format
+curl [METHOD] [URL] [HEADERS] [BODY]
+# -X = method (GET, POST, DELETE, PUT)
+# -H = header
+# -d = body
+
+# Create admin (run once)
+curl -X POST http://localhost:8787/auth/seed \
+  -H "Content-Type: application/json" \
+  -d "{\"username\": \"admin\", \"password\": \"yourpassword\"}"
+
+# Login
+curl -X POST http://localhost:8787/auth/login \
+  -H "Content-Type: application/json" \
+  -d "{\"username\": \"admin\", \"password\": \"yourpassword\"}"
+
+# List files (needs token)
+curl http://localhost:8787/files \
+  -H "Authorization: Bearer yourtoken"
+
+# Delete file (needs token)
+curl -X DELETE http://localhost:8787/files/myfile.jpg \
+  -H "Authorization: Bearer yourtoken"
+
+# List all users — admin only (needs admin token)
+curl http://localhost:8787/admin/users \
+  -H "Authorization: Bearer youradmintoken"
+
+# List all requests — admin only (needs admin token)
+curl http://localhost:8787/admin/requests \
+  -H "Authorization: Bearer youradmintoken"
+```
