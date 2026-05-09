@@ -3,6 +3,7 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware.js';
 import { listUserFiles, uploadFile, deleteFile, getFile } from '../r2.js';
+import { getConfig } from '../config.js';
 
 const router = new Hono();
 
@@ -13,7 +14,8 @@ router.use('*', authMiddleware);
 router.get('/', async (c) => {
 	try {
 		const { username } = c.get('user');
-		const files = await listUserFiles(c.env.personal_cloud_files, username);
+		const config = getConfig(c.env);
+		const files = await listUserFiles(config.r2.bucket, username);
 		return c.json({ files });
 	} catch (err) {
 		return c.json({ error: 'Failed to list files' }, 500);
@@ -24,6 +26,7 @@ router.get('/', async (c) => {
 router.post('/upload', async (c) => {
 	try {
 		const { username } = c.get('user');
+		const config = getConfig(c.env);
 		const formData = await c.req.formData();
 		const file = formData.get('file');
 
@@ -32,7 +35,7 @@ router.post('/upload', async (c) => {
 		}
 
 		const buffer = await file.arrayBuffer();
-		const key = await uploadFile(c.env.personal_cloud_files, username, file.name, buffer, file.type);
+		const key = await uploadFile(config.r2.bucket, username, file.name, buffer, file.type);
 
 		return c.json({ key, name: file.name, size: file.size }, 201);
 	} catch (err) {
@@ -44,8 +47,9 @@ router.post('/upload', async (c) => {
 router.get('/download/:key', async (c) => {
 	try {
 		const { username } = c.get('user');
+		const config = getConfig(c.env);
 		const key = decodeURIComponent(c.req.param('key'));
-		const object = await getFile(c.env.personal_cloud_files, username, key);
+		const object = await getFile(config.r2.bucket, username, key);
 
 		if (!object) {
 			return c.json({ error: 'File not found' }, 404);
@@ -68,8 +72,9 @@ router.get('/download/:key', async (c) => {
 router.delete('/:key', async (c) => {
 	try {
 		const { username } = c.get('user');
+		const config = getConfig(c.env);
 		const key = decodeURIComponent(c.req.param('key'));
-		await deleteFile(c.env.personal_cloud_files, username, key);
+		await deleteFile(config.r2.bucket, username, key);
 		return c.json({ success: true });
 	} catch (err) {
 		if (err.message.includes('Unauthorized')) {

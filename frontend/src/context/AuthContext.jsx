@@ -11,7 +11,7 @@ export function AuthProvider({ children }) {
 
   async function login(username, password) {
     const data = await r2Service.login(username, password);
-    const userData = { username: data.username };
+    const userData = { username: data.username, role: data.role };
     setUser(userData);
     localStorage.setItem("auth_user", JSON.stringify(userData));
     localStorage.setItem("auth_token", data.token);

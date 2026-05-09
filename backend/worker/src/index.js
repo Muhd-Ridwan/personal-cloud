@@ -4,6 +4,7 @@ import { Hono } from 'hono';
 import { corsHeaders } from './middleware.js';
 import authRouter from './routes/auth.js';
 import filesRouter from './routes/files.js';
+import adminRouter from './routes/admin.js';
 
 const app = new Hono();
 
@@ -18,6 +19,7 @@ app.options('*', (c) => {
 // Add CORS headers to every response
 app.use('*', async (c, next) => {
 	await next();
+	if (c.res.status >= 300 && c.res.status < 400) return;
 	Object.entries(corsHeaders()).forEach(([key, value]) => {
 		c.res.headers.set(key, value);
 	});
@@ -26,6 +28,7 @@ app.use('*', async (c, next) => {
 // Routes
 app.route('/auth', authRouter);
 app.route('/files', filesRouter);
+app.route('/admin', adminRouter);
 
 // Health check
 app.get('/', (c) => {

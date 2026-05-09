@@ -1,26 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Cloud, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/ui/Button";
 
 export default function LoginPage() {
-  const { login, register } = useAuth();
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(true);
+  const { login } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showGooglePrompt, setShowGooglePrompt] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get("error");
+    const newgoogle = params.get("newgoogle");
+    const email = params.get("email");
+    if (err) setError(err);
+    if (newgoogle && email) {
+      setGoogleEmail(decodeURIComponent(email));
+      setShowGooglePrompt(true);
+    }
+  }, []); // eslint-disable-line
 
   async function handleSubmit() {
     if (!username || !password) {
       setError("Username and password are required");
-      return;
-    }
-    if (!isLogin && password.length < 6) {
-      setError("Password must be at least 6 characters");
       return;
     }
 
@@ -28,24 +37,13 @@ export default function LoginPage() {
     setError("");
 
     try {
-      if (isLogin) {
-        await login(username, password);
-      } else {
-        await register(username, password);
-      }
+      await login(username, password);
       navigate("/drive");
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }
-
-  function switchMode() {
-    setIsLogin((s) => !s);
-    setError("");
-    setUsername("");
-    setPassword("");
   }
 
   function handleGoogleLogin() {
@@ -71,15 +69,17 @@ export default function LoginPage() {
           className="font-bold text-2xl text-[#e8eaed] tracking-tight"
           style={{ fontFamily: "Syne, sans-serif" }}
         >
-          MyDrive
+          Orbit Space
         </h1>
+        <p className="text-[9px] text-[#a8e4fe] mb-2">
+          Your Personal File Drive
+        </p>
         <p className="text-[13px] text-[#4a5568] mb-2">
-          {isLogin ? "Sign in to your account" : "Create a new account"}
+          Sign in to your account
         </p>
 
         {/* Form */}
         <div className="w-full flex flex-col gap-3 mt-2">
-          {/* Username */}
           <input
             type="text"
             placeholder="Username"
@@ -90,7 +90,6 @@ export default function LoginPage() {
             className="w-full bg-[#0d0f12] border border-[#252b36] rounded-xl py-2.5 px-3.5 text-sm text-[#e8eaed] placeholder-[#4a5568] outline-none focus:border-[#4f8ef7] transition-colors"
           />
 
-          {/* Password */}
           <div className="relative">
             <input
               type={show ? "text" : "password"}
@@ -119,16 +118,18 @@ export default function LoginPage() {
             onClick={handleSubmit}
             className="w-full justify-center"
           >
-            {isLogin ? "Sign In" : "Create Account"}
+            Sign In
           </Button>
         </div>
 
-        <div className="flex items-center gap-3 my-1">
+        {/* Divider */}
+        <div className="flex items-center gap-3 my-1 w-full">
           <div className="flex-1 h-px bg-[#252b36]" />
           <span className="text-[11.5px] text-[#4a5568]">or</span>
           <div className="flex-1 h-px bg-[#252b36]" />
         </div>
 
+        {/* Google Login */}
         <button
           onClick={handleGoogleLogin}
           className="w-full flex items-center justify-center gap-3 bg-[#1a1e25] border border-[#252b36] rounded-xl py-2.5 px-4 text-sm text-[#e8eaed] hover:bg-[#1f242d] hover:border-[#4a5568] transition-all cursor-pointer"
@@ -155,17 +156,63 @@ export default function LoginPage() {
           Continue with Google
         </button>
 
-        {/* Switch mode */}
+        {/* Request Access */}
         <p className="text-[12.5px] text-[#4a5568] mt-3">
-          {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+          Don't have an account?{" "}
           <button
-            onClick={switchMode}
+            onClick={() => navigate("/request-access")}
             className="text-[#4f8ef7] hover:text-[#6ba0f9] transition-colors cursor-pointer"
           >
-            {isLogin ? "Register" : "Sign In"}
+            Request Access
+          </button>
+        </p>
+        <p className="text-[12.5px] text-[#4a5568]">
+          <button
+            onClick={() => navigate("/forgot-password")}
+            className="text-[#4a5568] hover:text-[#c50f1f] transition-colors cursor-pointer"
+          >
+            Forgot password?
           </button>
         </p>
       </div>
+
+      {/* Google First Time User Popup */}
+      {showGooglePrompt && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-[#13161b] border border-[#252b36] rounded-2xl p-8 max-w-sm w-full flex flex-col gap-4 shadow-2xl">
+            <h2
+              className="font-bold text-lg text-[#e8eaed] tracking-tight"
+              style={{ fontFamily: "Syne, sans-serif" }}
+            >
+              First time here?
+            </h2>
+            <p className="text-sm text-[#8b95a3]">
+              No account found for{" "}
+              <span className="text-[#e8eaed]">{googleEmail}</span>. Would you
+              like to request access?
+            </p>
+            <div className="flex gap-2 justify-end mt-2">
+              <Button
+                variant="ghost"
+                onClick={() => setShowGooglePrompt(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setShowGooglePrompt(false);
+                  navigate(
+                    "/request-access?email=" + encodeURIComponent(googleEmail),
+                  );
+                }}
+              >
+                Request Access
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

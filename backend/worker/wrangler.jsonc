@@ -8,24 +8,30 @@
 	"main": "src/index.js",
 	"compatibility_date": "2026-05-08",
 	"observability": {
-		"enabled": true
+		"enabled": true,
 	},
 	"upload_source_maps": true,
-	"compatibility_flags": [
-		"nodejs_compat"
-	],
+	"compatibility_flags": ["nodejs_compat"],
 	"kv_namespaces": [
 		{
 			"binding": "USERS",
-			"id": "44288303b97a4a74a0084f3459473dc0"
-		}
+			"id": "44288303b97a4a74a0084f3459473dc0",
+		},
+		{
+			"binding": "REQUESTS",
+			"id": "08b134041cdb422cb21df450e5447027",
+		},
+		{
+			"binding": "RESET_TOKENS",
+			"id": "83b083ca862145a588c578baf95db162",
+		},
 	],
 	"r2_buckets": [
 		{
 			"bucket_name": "personal-cloud-files",
-			"binding": "personal_cloud_files"
-		}
-	]
+			"binding": "personal_cloud_files",
+		},
+	],
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

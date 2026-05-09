@@ -13,6 +13,9 @@ const DriveContext = createContext(null);
 export function DriveProvider({ children }) {
   const { user } = useAuth();
   const [files, setFiles] = useState([]);
+  const totalStorageUsed = files
+    .filter((f) => !f.trashed && f.type !== "folder")
+    .reduce((total, f) => total + (f.size || 0), 0);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState("grid");
   const [selectedIds, setSelectedIds] = useState([]);
@@ -139,6 +142,7 @@ export function DriveProvider({ children }) {
     <DriveContext.Provider
       value={{
         files,
+        totalStorageUsed,
         loading,
         viewMode,
         setViewMode,

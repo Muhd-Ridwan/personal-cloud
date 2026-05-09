@@ -104,4 +104,37 @@ export const r2Service = {
     if (!res.ok) throw new Error(data.error || "Delete failed");
     return data;
   },
+
+  async requestAccess(username, email, password, reason) {
+    const res = await fetch(`${BASE_URL}/auth/request`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, email, password, reason }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Request failed");
+    return data;
+  },
+
+  async forgotPassword(email) {
+    const res = await fetch(`${BASE_URL}/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Request failed");
+    return data;
+  },
+
+  async resetPassword(token, newPassword) {
+    const res = await fetch(`${BASE_URL}/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, newPassword }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Reset failed");
+    return data;
+  },
 };

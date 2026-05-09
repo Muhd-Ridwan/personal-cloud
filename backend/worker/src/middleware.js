@@ -1,6 +1,7 @@
 // src/middleware.js
 
 import { verifyJWT } from './auth.js';
+import { getConfig } from './config.js';
 
 // Protect routes — verify JWT token on every request
 export async function authMiddleware(c, next) {
@@ -11,7 +12,8 @@ export async function authMiddleware(c, next) {
 	}
 
 	const token = authHeader.split(' ')[1];
-	const payload = await verifyJWT(token, c.env.JWT_SECRET);
+	const config = getConfig(c.env);
+	const payload = await verifyJWT(token, config.jwt.secret);
 
 	if (!payload) {
 		return c.json({ error: 'Invalid or expired token' }, 401);
