@@ -13,6 +13,7 @@ A self-hosted cloud storage app built with React + Cloudflare Workers + R2.
 
 ## Project Structure
 
+```
 personal-cloud/
 ├── frontend/
 │   └── personal-cloud/
@@ -79,7 +80,7 @@ personal-cloud/
 ├── .dev.vars.example              # Example secrets
 ├── package.json
 └── wrangler.jsonc                 # Cloudflare Worker config
-
+```
 ## Prerequisites
 
 - Node.js 18+
@@ -105,8 +106,9 @@ npm install
 ```
 
 Create `.env` file:
-
+```
 VITE_WORKER_URL=http://localhost:8787
+```
 ### 3. Backend setup
 
 ```bash
@@ -137,11 +139,12 @@ npx wrangler secret put JWT_SECRET
 ```
 
 Create `.dev.vars` file:
-
+```
 JWT_SECRET=your_jwt_secret_here
 GOOGLE_CLIENT_ID=your_google_client_id_here
 GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 GOOGLE_REDIRECT_URI=http://localhost:8787/auth/google/callback
+```
 ### 4. Google OAuth setup
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
@@ -150,11 +153,13 @@ GOOGLE_REDIRECT_URI=http://localhost:8787/auth/google/callback
 4. Go to **Clients** → **Create OAuth Client ID**
 5. Application type → **Web application**
 6. Add Authorised JavaScript origins:
-
+```
 http://localhost:5173
+```
 7. Add Authorised redirect URIs:
-
+```
 http://localhost:8787/auth/google/callback
+```
 8. Copy **Client ID** and **Client Secret** into `.dev.vars`
 
 ### 5. Create admin account
@@ -208,13 +213,15 @@ curl -X POST https://your-worker.your-subdomain.workers.dev/auth/seed \
 ```
 
 Update Google OAuth redirect URI in Google Cloud Console:
-
+```
 https://your-worker.your-subdomain.workers.dev/auth/google/callback
+```
 ### Deploy Frontend
 
 Update `.env` with your deployed Worker URL:
-
+```
 VITE_WORKER_URL=https://your-worker.your-subdomain.workers.dev
+```
 Build and deploy to Cloudflare Pages:
 ```bash
 npm run build
