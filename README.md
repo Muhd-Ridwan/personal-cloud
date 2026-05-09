@@ -44,10 +44,12 @@ personal-cloud/
 │       │   ├── pages/
 │       │   │   ├── AdminPage.jsx              # Admin dashboard
 │       │   │   ├── AuthCallbackPage.jsx       # Handles Google OAuth callback
+|       |   |   ├── ForgotPasswordPage.jsx     # Forgot Password form
 │       │   │   ├── LoginPage.jsx              # Login page
 │       │   │   ├── MyDrivePage.jsx            # Main drive with breadcrumbs
 │       │   │   ├── RecentPage.jsx             # Recently modified files
 │       │   │   ├── RequestAccessPage.jsx      # Request access form for new users
+|       |   |   ├── ResetPasswordPage.jsx      # Reset password form
 │       │   │   ├── StarredPage.jsx            # Starred files
 │       │   │   └── TrashPage.jsx              # Trash with restore/delete
 │       │   ├── services/
@@ -73,6 +75,7 @@ personal-cloud/
 │   │   └── files.js               # File CRUD routes
 │   ├── auth.js                    # JWT + password hashing
 │   ├── config.js                  # Centralised env config
+|   ├── email.js                   # Resend email helper
 │   ├── index.js                   # Hono app entry point
 │   ├── middleware.js              # Auth middleware + CORS
 │   └── r2.js                      # R2 file operations
@@ -125,6 +128,10 @@ Create KV namespace for requests:
 ```bash
 npx wrangler kv namespace create "REQUESTS"
 ```
+Create KV namespace for reset tokens:
+```bash
+npx wrangler kv namespace create "RESET_TOKENS"
+```
 
 Create R2 bucket for files:
 ```bash
@@ -144,6 +151,8 @@ JWT_SECRET=your_jwt_secret_here
 GOOGLE_CLIENT_ID=your_google_client_id_here
 GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 GOOGLE_REDIRECT_URI=http://localhost:8787/auth/google/callback
+RESEND_API_KEY=your_resend_api_key_here
+FROM_EMAIL=onboarding@resend.dev
 ```
 ### 4. Google OAuth setup
 
@@ -162,13 +171,21 @@ http://localhost:8787/auth/google/callback
 ```
 8. Copy **Client ID** and **Client Secret** into `.dev.vars`
 
-### 5. Create admin account
+### 5. Resend email setup
+
+1. Go to [resend.com](https://resend.com) and sign up
+2. Go to **API Keys** -> **Create API Key**
+3. copy the key into `.dev.vars` as `RESEND_API_KEY`
+4. For local dev, user `FROM_EMAIL=onboarding@resend.dev` (Resend's test sender - can only send to your Resend account email)
+5. For production, go to **Domains** -> **Add Domain** -> add `your-domain.com` -> add the DNS records -> set `FROM_EMAIL=noreply@your-domain.com`
+
+### 6. Create admin account
 
 After starting the Worker, run this once:
 ```bash
 curl -X POST http://localhost:8787/auth/seed \
-  -H "Content-Type: application/json" \
-  -d "{\"username\": \"admin\", \"password\": \"yourpassword\"}"
+    -H "Content-Type: application/json" \
+    -d "{\"username\": \"admin\", \"password\": \"yourpassword\", \"email\": \"admin@youremail.com\"}"
 ```
 
 ---
@@ -202,6 +219,8 @@ npx wrangler secret put JWT_SECRET
 npx wrangler secret put GOOGLE_CLIENT_ID
 npx wrangler secret put GOOGLE_CLIENT_SECRET
 npx wrangler secret put GOOGLE_REDIRECT_URI
+npx wrangler secret put RESEND_API_KEY
+npx wrangler secret put FROM_EMAIL
 npm run deploy
 ```
 
@@ -243,6 +262,8 @@ npm run build
 | `GOOGLE_CLIENT_ID` | Google OAuth Client ID |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth Client Secret |
 | `GOOGLE_REDIRECT_URI` | Google OAuth redirect URI |
+| `RESEND_API_KEY` | Resend API key for sending emails |
+| `FROM_EMAIL` | Sender email address |
 
 ---
 
@@ -280,4 +301,14 @@ curl http://localhost:8787/admin/users \
 # List all requests — admin only (needs admin token)
 curl http://localhost:8787/admin/requests \
   -H "Authorization: Bearer youradmintoken"
+
+# Forgot password
+curl -X POST http://localhost:8787/auth/forgot-password \
+  -H "Content-Type: application/json" \
+  -d "{\"email\": \"user@example.com\"}"
+
+# Reset password (token from email link)
+curl -X POST http://localhost:8787/auth/reset-password \
+  -H "Content-Type: application/json" \
+  -d "{\"token\": \"yourtoken\", \"newPassword\": \"newpassword\"}"
 ```
