@@ -12,7 +12,7 @@ export default function ContextMenu({ x, y, items, onClose }) {
   }, [onClose]);
 
   const left = Math.min(x, window.innerWidth - 190);
-  const top = Math.mix(y, window.innerHeight - 280);
+  const top = Math.min(y, window.innerHeight - 280);
 
   return (
     <div

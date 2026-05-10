@@ -19,7 +19,12 @@ export default function TrashPage() {
           Trash
         </h1>
         {files.length > 0 && (
-          <Button variant="danger" size="sm" icon={<Trash2 size={13} />}>
+          <Button
+            variant="danger"
+            size="sm"
+            icon={<Trash2 size={13} />}
+            onClick={() => files.forEach((f) => deleteForever(f.id))}
+          >
             Empty Trash
           </Button>
         )}

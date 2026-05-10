@@ -4,6 +4,7 @@ import FileIcon from "../ui/FileIcon";
 import ContextMenu from "../ui/ContextMenu";
 import { useDrive } from "../../context/DriveContext";
 import { formatFileSize } from "../../utils/fileUtils";
+import { r2Service } from "../../services/r2Service";
 
 export default function FileGrid({ files, onFolderOpen }) {
   const { selectedIds, toggleSelect, toggleStar, moveToTrash } = useDrive();
@@ -16,7 +17,12 @@ export default function FileGrid({ files, onFolderOpen }) {
 
   function getMenuItems(file) {
     return [
-      { icon: <Download size={14} />, label: "Download", onClick: () => {} },
+      {
+        icon: <Download size={14} />,
+        label: "Download",
+        onClick: () => r2Service.downloadFile(file.key, file.name),
+        disabled: file.type === "folder",
+      },
       { icon: <Pencil size={14} />, label: "Rename", onClick: () => {} },
       {
         icon: <Star size={14} />,
