@@ -105,6 +105,45 @@ export const r2Service = {
     return data;
   },
 
+  async toggleStar(key) {
+    const res = await fetch(
+      `${BASE_URL}/files/star/${encodeURIComponent(key)}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+      },
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to toggle star");
+    return data;
+  },
+
+  async trashFile(key) {
+    const res = await fetch(
+      `${BASE_URL}/files/trash/${encodeURIComponent(key)}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+      },
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to trash file");
+    return data;
+  },
+
+  async restoreFile(key) {
+    const res = await fetch(
+      `${BASE_URL}/files/restore/${encodeURIComponent(key)}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+      },
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to restore file");
+    return data;
+  },
+
   async requestAccess(username, email, password, reason) {
     const res = await fetch(`${BASE_URL}/auth/request`, {
       method: "POST",

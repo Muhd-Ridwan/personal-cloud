@@ -16,7 +16,21 @@ router.get('/', async (c) => {
 		const { username } = c.get('user');
 		const config = getConfig(c.env);
 		const files = await listUserFiles(config.r2.bucket, username);
-		return c.json({ files });
+
+		const filesWithMeta = await Promise.all(
+			files.map(async (file) => {
+				const metaKey = `meta:${username}:${file.name}`;
+				const meta = await config.kv.fileMeta.get(metaKey, 'json');
+				return {
+					...file,
+					id: file.key,
+					starred: meta?.starred ?? false,
+					trashed: meta?.trashed ?? false,
+				};
+			}),
+		);
+
+		return c.json({ files: filesWithMeta });
 	} catch (err) {
 		return c.json({ error: 'Failed to list files' }, 500);
 	}
@@ -81,6 +95,62 @@ router.delete('/:key', async (c) => {
 			return c.json({ error: 'Unauthorized' }, 403);
 		}
 		return c.json({ error: 'Delete failed' }, 500);
+	}
+});
+
+// PATCH /files/star/:key - toggle starred
+router.patch('/star/:key', async (c) => {
+	try {
+		const { username } = c.get('user');
+		const config = getConfig(c.env);
+		const key = decodeURIComponent(c.req.param('key'));
+		const filename = key.replace(`users/${username}/`, '');
+		const metaKey = `meta:${username}:${filename}`;
+
+		const existing = (await config.kv.fileMeta.get(metaKey, 'json')) || {};
+		const starred = !existing.starred;
+		await config.kv.fileMeta.put(metaKey, JSON.stringify({ ...existing, starred }));
+
+		return c.json({ starred });
+	} catch (err) {
+		return c.json({ error: 'Failed to toggle star' }, 500);
+	}
+});
+
+// PATCH /files/trash/:key — move to trash
+router.patch('/trash/:key', async (c) => {
+	try {
+		const { username } = c.get('user');
+		const config = getConfig(c.env);
+		const key = decodeURIComponent(c.req.param('key'));
+		const filename = key.replace(`users/${username}/`, '');
+		const metaKey = `meta:${username}:${filename}`;
+
+		const existing = (await config.kv.fileMeta.get(metaKey, 'json')) || {};
+		await config.kv.fileMeta.put(metaKey, JSON.stringify({ ...existing, trashed: true, trashedAt: new Date().toISOString() }));
+
+		return c.json({ success: true });
+	} catch (err) {
+		return c.json({ error: 'Failed to trash file' }, 500);
+	}
+});
+
+// PATCH /files/restore/:key — restore from trash
+router.patch('/restore/:key', async (c) => {
+	try {
+		const { username } = c.get('user');
+		const config = getConfig(c.env);
+		const key = decodeURIComponent(c.req.param('key'));
+		const filename = key.replace(`users/${username}/`, '');
+		const metaKey = `meta:${username}:${filename}`;
+
+		const existing = (await config.kv.fileMeta.get(metaKey, 'json')) || {};
+		const { trashedAt, ...rest } = existing;
+		await config.kv.fileMeta.put(metaKey, JSON.stringify({ ...rest, trashed: false }));
+
+		return c.json({ success: true });
+	} catch (err) {
+		return c.json({ error: 'Failed to restore file' }, 500);
 	}
 });
 

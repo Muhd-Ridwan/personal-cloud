@@ -10,18 +10,6 @@ import { useAuth } from "./AuthContext";
 
 const DriveContext = createContext(null);
 
-function loadSet(key) {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(key)) || []);
-  } catch {
-    return new Set();
-  }
-}
-
-function saveSet(key, set) {
-  localStorage.setItem(key, JSON.stringify([...set]));
-}
-
 export function DriveProvider({ children }) {
   const { user } = useAuth();
   const [files, setFiles] = useState([]);
@@ -45,14 +33,11 @@ export function DriveProvider({ children }) {
     try {
       setLoading(true);
       const data = await r2Service.listFiles();
-      const trashed = loadSet("drive_trashed");
-      const starred = loadSet("drive_starred");
-      // Add extra fields frontend needs
       const mapped = data.map((f) => ({
         ...f,
         folderId: null,
-        starred: starred.has(f.id),
-        trashed: trashed.has(f.id),
+        starred: f.starred ?? false,
+        trashed: f.trashed ?? false,
         updatedAt: new Date(f.updatedAt),
       }));
       setFiles(mapped);
@@ -85,59 +70,49 @@ export function DriveProvider({ children }) {
     return files.filter((f) => f.trashed);
   }, [files]);
 
-  const toggleStar = useCallback((id) => {
-    setFiles((prev) => {
-      const updated = prev.map((f) =>
-        f.id === id ? { ...f, starred: !f.starred } : f,
+  const toggleStar = useCallback(
+    async (id) => {
+      const file = files.find((f) => f.id === id);
+      if (!file) return;
+      await r2Service.toggleStar(file.key);
+      setFiles((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, starred: !f.starred } : f)),
       );
-      const starred = new Set(
-        updated.filter((f) => f.starred).map((f) => f.id),
-      );
-      saveSet("drive_starred", starred);
-      return updated;
-    });
-  }, []);
+    },
+    [files],
+  );
 
-  const moveToTrash = useCallback((id) => {
-    setFiles((prev) => {
-      const updated = prev.map((f) =>
-        f.id === id ? { ...f, trashed: true } : f,
+  const moveToTrash = useCallback(
+    async (id) => {
+      const file = files.find((f) => f.id === id);
+      if (!file) return;
+      await r2Service.trashFile(file.key);
+      setFiles((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, trashed: true } : f)),
       );
-      const trashed = new Set(
-        updated.filter((f) => f.trashed).map((f) => f.id),
-      );
-      saveSet("drive_trashed", trashed);
-      return updated;
-    });
-    setSelectedIds((prev) => prev.filter((sid) => sid !== id));
-  }, []);
+      setSelectedIds((prev) => prev.filter((sid) => sid !== id));
+    },
+    [files],
+  );
 
-  const restoreFromTrash = useCallback((id) => {
-    setFiles((prev) => {
-      const updated = prev.map((f) =>
-        f.id === id ? { ...f, trashed: false } : f,
+  const restoreFromTrash = useCallback(
+    async (id) => {
+      const file = files.find((f) => f.id === id);
+      if (!file) return;
+      await r2Service.restoreFile(file.key);
+      setFiles((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, trashed: false } : f)),
       );
-      const trashed = new Set(
-        updated.filter((f) => f.trashed).map((f) => f.id),
-      );
-      saveSet("drive_trashed", trashed);
-      return updated;
-    });
-  }, []);
+    },
+    [files],
+  );
 
   const deleteForever = useCallback(
     async (id) => {
       try {
         const file = files.find((f) => f.id === id);
         if (file) await r2Service.deleteFile(file.key);
-        setFiles((prev) => {
-          const updated = prev.filter((f) => f.id !== id);
-          const trashed = new Set(
-            updated.filter((f) => f.trashed).map((f) => f.id),
-          );
-          saveSet("drive_trashed", trashed);
-          return updated;
-        });
+        setFiles((prev) => prev.filter((f) => f.id !== id));
       } catch (err) {
         console.error("Failed to delete file:", err.message);
       }
