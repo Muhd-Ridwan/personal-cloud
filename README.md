@@ -133,6 +133,10 @@ Create KV namespace for reset tokens:
 npx wrangler kv namespace create "RESET_TOKENS"
 ```
 
+Create KV namespace for File Meta:
+```bash
+wrangler kv namespace create FILE_META
+```
 Create R2 bucket for files:
 ```bash
 npx wrangler r2 bucket create personal-cloud-files
