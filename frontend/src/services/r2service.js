@@ -144,6 +144,20 @@ export const r2Service = {
     return data;
   },
 
+  async renameFile(key, newName) {
+    const res = await fetch(
+      `${BASE_URL}/files/rename/${encodeURIComponent(key)}`,
+      {
+        method: "PATCH",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ newName }),
+      },
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Rename Failed");
+    return data;
+  },
+
   async requestAccess(username, email, password, reason) {
     const res = await fetch(`${BASE_URL}/auth/request`, {
       method: "POST",

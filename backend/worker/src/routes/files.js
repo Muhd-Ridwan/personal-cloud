@@ -154,4 +154,42 @@ router.patch('/restore/:key', async (c) => {
 	}
 });
 
+// PATCH /files/rename/key
+router.patch('/rename/:key', async (c) => {
+	try {
+		const { username } = c.get('user');
+		const config = getConfig(c.env);
+		const oldKey = decodeURIComponent(c.req.param('key'));
+		const { newName } = await c.req.json();
+
+		if (!newName || newName.includes('/') || newName.includes('..')) {
+			return c.json({ error: 'Invalid file name' }, 400);
+		}
+		if (!oldKey.startsWith(`users/${username}/`)) {
+			return c.json({ error: 'Unauthorized' }, 403);
+		}
+
+		const newKey = `users/${username}/${newName}`;
+
+		const object = await config.r2.bucket.get(oldKey);
+		if (!object) return c.json({ error: 'File not found' }, 404);
+
+		await config.r2.bucket.put(newKey, object.body, {
+			httpMetadata: object.httpMetadata,
+		});
+		await config.r2.bucket.delete(oldKey);
+
+		const oldMetaKey = `meta:${username}:${oldKey.replace(`users/${username}/`, '')}`;
+		const newMetaKey = `meta:${username}:${newName}`;
+		const meta = await config.kv.fileMeta.get(oldMetaKey, 'json');
+		if (meta) {
+			await config.kv.fileMeta.put(newMetaKey, JSON.stringify(meta));
+			await config.kv.fileMeta.delete(oldMetaKey);
+		}
+		return c.json({ key: newKey, name: newName });
+	} catch (err) {
+		return c.json({ error: 'Rename failed' }, 500);
+	}
+});
+
 export default router;

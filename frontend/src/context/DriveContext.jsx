@@ -107,6 +107,18 @@ export function DriveProvider({ children }) {
     [files],
   );
 
+  const renameFile = useCallback(
+    async (id, newName) => {
+      const file = files.find((f) => f.id === id);
+      if (!file) return;
+      const { key, name } = await r2Service.renameFile(file.key, newName);
+      setFiles((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, id: key, key, name } : f)),
+      );
+    },
+    [files],
+  );
+
   const deleteForever = useCallback(
     async (id) => {
       try {
@@ -176,6 +188,7 @@ export function DriveProvider({ children }) {
         deleteForever,
         uploadFile,
         createFolder,
+        renameFile,
         fetchFiles,
       }}
     >

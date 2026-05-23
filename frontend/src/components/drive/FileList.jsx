@@ -5,10 +5,13 @@ import ContextMenu from "../ui/ContextMenu";
 import { useDrive } from "../../context/DriveContext";
 import { formatFileSize, formatDate } from "../../utils/fileUtils";
 import { r2Service } from "../../services/r2Service";
+import Modal from "../ui/Modal";
 
 export default function FileList({ files, onFolderOpen }) {
-  const { selectedIds, toggleSelect, toggleStar, moveToTrash } = useDrive();
+  const { selectedIds, toggleSelect, toggleStar, moveToTrash, renameFile } =
+    useDrive();
   const [menu, setMenu] = useState(null);
+  const [renaming, setRenaming] = useState(null);
 
   function handleContextMenu(e, file) {
     e.preventDefault();
@@ -23,7 +26,12 @@ export default function FileList({ files, onFolderOpen }) {
         onClick: () => r2Service.downloadFile(file.key, file.name),
         disabled: file.type === "folder",
       },
-      { icon: <Pencil size={14} />, label: "Rename", onClick: () => {} },
+      {
+        icon: <Pencil size={14} />,
+        label: "Rename",
+        onClick: () => setRenaming({ id: file.id, currentName: file.name }),
+        disabled: file.type === "folder",
+      },
       {
         icon: <Star size={14} />,
         label: file.starred ? "Unstar" : "Star",
@@ -123,6 +131,58 @@ export default function FileList({ files, onFolderOpen }) {
           onClose={() => setMenu(null)}
         />
       )}
+      {renaming && (
+        <RenameModal
+          currentName={renaming.currentName}
+          onConfirm={async (newName) => {
+            await renameFile(renaming.id, newName);
+            setRenaming(null);
+          }}
+          onClose={() => setRenaming(null)}
+        />
+      )}
     </>
+  );
+}
+
+function RenameModal({ currentName, onConfirm, onClose }) {
+  const [value, setValue] = useState(currentName);
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const trimmed = value.trim();
+    if (trimmed && trimmed !== currentName) onConfirm(trimmed);
+    else onClose();
+  }
+
+  return (
+    <Modal title="Rename" onClose={onClose} width={380}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <input
+          autoFocus
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="w-full bg-[#13161b] border border-[#252b36] rounded-xl px-3.5 py-2.5 text-sm text-[#e8eaed]
+  outline-none focus:border-[#4f8ef7] transition-colors"
+        />
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl text-sm text-[#8b95a3] hover:bg-[#1f242d] transition-colors
+  cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 rounded-xl text-sm bg-[#4f8ef7] text-white hover:bg-[#3d7ef6] transition-colors
+  cursor-pointer"
+          >
+            Rename
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }
