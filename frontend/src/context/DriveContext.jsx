@@ -32,15 +32,26 @@ export function DriveProvider({ children }) {
   async function fetchFiles() {
     try {
       setLoading(true);
-      const data = await r2Service.listFiles();
-      const mapped = data.map((f) => ({
+      const [filesData, foldersData] = await Promise.all([
+        r2Service.listFiles(),
+        r2Service.listFolders(),
+      ]);
+      const mappedFiles = filesData.map((f) => ({
         ...f,
-        folderId: null,
+        folderId: f.folderId ?? null,
         starred: f.starred ?? false,
         trashed: f.trashed ?? false,
         updatedAt: new Date(f.updatedAt),
       }));
-      setFiles(mapped);
+      const mappedFolders = foldersData.map((folder) => ({
+        ...folder,
+        size: 0,
+        starred: false,
+        trashed: folder.trashed ?? false,
+        folderId: folder.parentFolderId ?? null,
+        updatedAt: new Date(folder.createdAt),
+      }));
+      setFiles([...mappedFiles, ...mappedFolders]);
     } catch (err) {
       console.error("Failed to fetch files:", err.message);
     } finally {
@@ -73,7 +84,7 @@ export function DriveProvider({ children }) {
   const toggleStar = useCallback(
     async (id) => {
       const file = files.find((f) => f.id === id);
-      if (!file) return;
+      if (!file || file.type === "folder") return;
       await r2Service.toggleStar(file.key);
       setFiles((prev) =>
         prev.map((f) => (f.id === id ? { ...f, starred: !f.starred } : f)),
@@ -86,7 +97,11 @@ export function DriveProvider({ children }) {
     async (id) => {
       const file = files.find((f) => f.id === id);
       if (!file) return;
-      await r2Service.trashFile(file.key);
+      if (file.type === "folder") {
+        await r2Service.trashFolder(file.id);
+      } else {
+        await r2Service.trashFile(file.key);
+      }
       setFiles((prev) =>
         prev.map((f) => (f.id === id ? { ...f, trashed: true } : f)),
       );
@@ -99,7 +114,11 @@ export function DriveProvider({ children }) {
     async (id) => {
       const file = files.find((f) => f.id === id);
       if (!file) return;
-      await r2Service.restoreFile(file.key);
+      if (file.type === "folder") {
+        await r2Service.restoreFolder(file.id);
+      } else {
+        await r2Service.restoreFile(file.key);
+      }
       setFiles((prev) =>
         prev.map((f) => (f.id === id ? { ...f, trashed: false } : f)),
       );
@@ -111,6 +130,13 @@ export function DriveProvider({ children }) {
     async (id, newName) => {
       const file = files.find((f) => f.id === id);
       if (!file) return;
+      if (file.type === "folder") {
+        await r2Service.renameFolder(file.id, newName);
+        setFiles((prev) =>
+          prev.map((f) => (f.id === id ? { ...f, name: newName } : f)),
+        );
+        return;
+      }
       const { key, name } = await r2Service.renameFile(file.key, newName);
       setFiles((prev) =>
         prev.map((f) => (f.id === id ? { ...f, id: key, key, name } : f)),
@@ -123,19 +149,23 @@ export function DriveProvider({ children }) {
     async (id) => {
       try {
         const file = files.find((f) => f.id === id);
-        if (file) await r2Service.deleteFile(file.key);
+        if (!file) return;
+        if (file.type === "folder") {
+          await r2Service.deleteFolder(file.id);
+        } else {
+          await r2Service.deleteFile(file.key);
+        }
         setFiles((prev) => prev.filter((f) => f.id !== id));
       } catch (err) {
-        console.error("Failed to delete file:", err.message);
+        console.error("Failed to delete:", err.message);
       }
     },
     [files],
   );
 
-  const uploadFile = useCallback(async (file, onProgress) => {
+  const uploadFile = useCallback(async (file, onProgress, folderId = null) => {
     try {
-      const data = await r2Service.uploadFile(file, onProgress);
-      // Refresh files list after upload
+      const data = await r2Service.uploadFile(file, onProgress, folderId);
       await fetchFiles();
       return data;
     } catch (err) {
@@ -144,19 +174,18 @@ export function DriveProvider({ children }) {
     }
   }, []);
 
-  const createFolder = useCallback((name, parentFolderId = null) => {
-    // Folders are local only for now — R2 doesn't have real folders
-    const newFolder = {
-      id: Date.now().toString(),
-      name,
-      type: "folder",
-      size: 0,
-      folderId: parentFolderId,
-      starred: false,
-      trashed: false,
-      updatedAt: new Date(),
-    };
-    setFiles((prev) => [...prev, newFolder]);
+  const createFolder = useCallback(async (name, parentFolderId = null) => {
+    const folder = await r2Service.createFolder(name, parentFolderId);
+    setFiles((prev) => [
+      ...prev,
+      {
+        ...folder,
+        size: 0,
+        starred: false,
+        folderId: folder.parentFolderId ?? null,
+        updatedAt: new Date(folder.createdAt),
+      },
+    ]);
   }, []);
 
   const toggleSelect = useCallback((id) => {

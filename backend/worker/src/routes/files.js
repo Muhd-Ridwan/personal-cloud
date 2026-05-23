@@ -26,6 +26,7 @@ router.get('/', async (c) => {
 					id: file.key,
 					starred: meta?.starred ?? false,
 					trashed: meta?.trashed ?? false,
+					folderId: meta?.folderId ?? null,
 				};
 			}),
 		);
@@ -43,6 +44,7 @@ router.post('/upload', async (c) => {
 		const config = getConfig(c.env);
 		const formData = await c.req.formData();
 		const file = formData.get('file');
+		const folderId = formData.get('folderId') || null;
 
 		if (!file) {
 			return c.json({ error: 'No file provided' }, 400);
@@ -51,7 +53,10 @@ router.post('/upload', async (c) => {
 		const buffer = await file.arrayBuffer();
 		const key = await uploadFile(config.r2.bucket, username, file.name, buffer, file.type);
 
-		return c.json({ key, name: file.name, size: file.size }, 201);
+		const metaKey = `meta:${username}:${file.name}`;
+		await config.kv.fileMeta.put(metaKey, JSON.stringify({ folderId, starred: false, trashed: false }));
+
+		return c.json({ key, name: file.name, size: file.size, folderId }, 201);
 	} catch (err) {
 		return c.json({ error: 'Upload failed' }, 500);
 	}
@@ -89,6 +94,8 @@ router.delete('/:key', async (c) => {
 		const config = getConfig(c.env);
 		const key = decodeURIComponent(c.req.param('key'));
 		await deleteFile(config.r2.bucket, username, key);
+		const filename = key.replace(`users/${username}/`, '');
+		await config.kv.fileMeta.delete(`meta:${username}:${filename}`);
 		return c.json({ success: true });
 	} catch (err) {
 		if (err.message.includes('Unauthorized')) {
