@@ -2,6 +2,15 @@
 
 export const changelog = [
   {
+    version: "0.0.5",
+    date: "May 10, 2026",
+    changes: [
+      "Adding funcitonality download",
+      "Make the files accessible througout different browser or machine by adding meta data files",
+      "Star & delete now is consistent",
+    ],
+  },
+  {
     version: "0.0.4",
     date: "May 10, 2026",
     changes: [

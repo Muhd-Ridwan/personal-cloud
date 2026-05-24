@@ -20,7 +20,7 @@ export default function UploadButton({ currentFolderId }) {
       for (const file of Array.from(fileList)) {
         await uploadFile(file, (progress) => {
           console.log(`${file.name}: ${progress}%`);
-        });
+        }, currentFolderId);
       }
     } catch (err) {
       console.error("Upload failed:", err.message);

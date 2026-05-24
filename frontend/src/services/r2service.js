@@ -48,9 +48,10 @@ export const r2Service = {
   },
 
   // Upload a file
-  async uploadFile(file, onProgress) {
+  async uploadFile(file, onProgress, folderId = null) {
     const formData = new FormData();
     formData.append("file", file);
+    if (folderId) formData.append("folderId", folderId);
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -102,6 +103,120 @@ export const r2Service = {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Delete failed");
+    return data;
+  },
+
+  async toggleStar(key) {
+    const res = await fetch(
+      `${BASE_URL}/files/star/${encodeURIComponent(key)}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+      },
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to toggle star");
+    return data;
+  },
+
+  async trashFile(key) {
+    const res = await fetch(
+      `${BASE_URL}/files/trash/${encodeURIComponent(key)}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+      },
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to trash file");
+    return data;
+  },
+
+  async restoreFile(key) {
+    const res = await fetch(
+      `${BASE_URL}/files/restore/${encodeURIComponent(key)}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+      },
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to restore file");
+    return data;
+  },
+
+  async listFolders() {
+    const res = await fetch(`${BASE_URL}/folders`, {
+      headers: authHeaders(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to list folders");
+    return data.folders;
+  },
+
+  async createFolder(name, parentFolderId = null) {
+    const res = await fetch(`${BASE_URL}/folders`, {
+      method: "POST",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ name, parentFolderId }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to create folder");
+    return data;
+  },
+
+  async renameFolder(id, newName) {
+    const res = await fetch(`${BASE_URL}/folders/rename/${id}`, {
+      method: "PATCH",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ newName }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to rename folder");
+    return data;
+  },
+
+  async trashFolder(id) {
+    const res = await fetch(`${BASE_URL}/folders/trash/${id}`, {
+      method: "PATCH",
+      headers: authHeaders(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to trash folder");
+    return data;
+  },
+
+  async restoreFolder(id) {
+    const res = await fetch(`${BASE_URL}/folders/restore/${id}`, {
+      method: "PATCH",
+      headers: authHeaders(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to restore folder");
+    return data;
+  },
+
+  async deleteFolder(id) {
+    const res = await fetch(`${BASE_URL}/folders/${id}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to delete folder");
+    return data;
+  },
+
+  async renameFile(key, newName) {
+    const res = await fetch(
+      `${BASE_URL}/files/rename/${encodeURIComponent(key)}`,
+      {
+        method: "PATCH",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ newName }),
+      },
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Rename Failed");
     return data;
   },
 

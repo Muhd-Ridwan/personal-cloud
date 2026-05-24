@@ -25,6 +25,10 @@
 			"binding": "RESET_TOKENS",
 			"id": "83b083ca862145a588c578baf95db162",
 		},
+		{
+			"binding": "FILE_META",
+			"id": "f2a2044679d24024ac93395cc38faa1c",
+		},
 	],
 	"r2_buckets": [
 		{
