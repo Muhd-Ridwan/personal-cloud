@@ -16,7 +16,22 @@ router.get('/', async (c) => {
 		const { username } = c.get('user');
 		const config = getConfig(c.env);
 		const files = await listUserFiles(config.r2.bucket, username);
-		return c.json({ files });
+
+		const filesWithMeta = await Promise.all(
+			files.map(async (file) => {
+				const metaKey = `meta:${username}:${file.name}`;
+				const meta = await config.kv.fileMeta.get(metaKey, 'json');
+				return {
+					...file,
+					id: file.key,
+					starred: meta?.starred ?? false,
+					trashed: meta?.trashed ?? false,
+					folderId: meta?.folderId ?? null,
+				};
+			}),
+		);
+
+		return c.json({ files: filesWithMeta });
 	} catch (err) {
 		return c.json({ error: 'Failed to list files' }, 500);
 	}
@@ -29,6 +44,7 @@ router.post('/upload', async (c) => {
 		const config = getConfig(c.env);
 		const formData = await c.req.formData();
 		const file = formData.get('file');
+		const folderId = formData.get('folderId') || null;
 
 		if (!file) {
 			return c.json({ error: 'No file provided' }, 400);
@@ -37,7 +53,10 @@ router.post('/upload', async (c) => {
 		const buffer = await file.arrayBuffer();
 		const key = await uploadFile(config.r2.bucket, username, file.name, buffer, file.type);
 
-		return c.json({ key, name: file.name, size: file.size }, 201);
+		const metaKey = `meta:${username}:${file.name}`;
+		await config.kv.fileMeta.put(metaKey, JSON.stringify({ folderId, starred: false, trashed: false }));
+
+		return c.json({ key, name: file.name, size: file.size, folderId }, 201);
 	} catch (err) {
 		return c.json({ error: 'Upload failed' }, 500);
 	}
@@ -75,12 +94,108 @@ router.delete('/:key', async (c) => {
 		const config = getConfig(c.env);
 		const key = decodeURIComponent(c.req.param('key'));
 		await deleteFile(config.r2.bucket, username, key);
+		const filename = key.replace(`users/${username}/`, '');
+		await config.kv.fileMeta.delete(`meta:${username}:${filename}`);
 		return c.json({ success: true });
 	} catch (err) {
 		if (err.message.includes('Unauthorized')) {
 			return c.json({ error: 'Unauthorized' }, 403);
 		}
 		return c.json({ error: 'Delete failed' }, 500);
+	}
+});
+
+// PATCH /files/star/:key - toggle starred
+router.patch('/star/:key', async (c) => {
+	try {
+		const { username } = c.get('user');
+		const config = getConfig(c.env);
+		const key = decodeURIComponent(c.req.param('key'));
+		const filename = key.replace(`users/${username}/`, '');
+		const metaKey = `meta:${username}:${filename}`;
+
+		const existing = (await config.kv.fileMeta.get(metaKey, 'json')) || {};
+		const starred = !existing.starred;
+		await config.kv.fileMeta.put(metaKey, JSON.stringify({ ...existing, starred }));
+
+		return c.json({ starred });
+	} catch (err) {
+		return c.json({ error: 'Failed to toggle star' }, 500);
+	}
+});
+
+// PATCH /files/trash/:key — move to trash
+router.patch('/trash/:key', async (c) => {
+	try {
+		const { username } = c.get('user');
+		const config = getConfig(c.env);
+		const key = decodeURIComponent(c.req.param('key'));
+		const filename = key.replace(`users/${username}/`, '');
+		const metaKey = `meta:${username}:${filename}`;
+
+		const existing = (await config.kv.fileMeta.get(metaKey, 'json')) || {};
+		await config.kv.fileMeta.put(metaKey, JSON.stringify({ ...existing, trashed: true, trashedAt: new Date().toISOString() }));
+
+		return c.json({ success: true });
+	} catch (err) {
+		return c.json({ error: 'Failed to trash file' }, 500);
+	}
+});
+
+// PATCH /files/restore/:key — restore from trash
+router.patch('/restore/:key', async (c) => {
+	try {
+		const { username } = c.get('user');
+		const config = getConfig(c.env);
+		const key = decodeURIComponent(c.req.param('key'));
+		const filename = key.replace(`users/${username}/`, '');
+		const metaKey = `meta:${username}:${filename}`;
+
+		const existing = (await config.kv.fileMeta.get(metaKey, 'json')) || {};
+		const { trashedAt, ...rest } = existing;
+		await config.kv.fileMeta.put(metaKey, JSON.stringify({ ...rest, trashed: false }));
+
+		return c.json({ success: true });
+	} catch (err) {
+		return c.json({ error: 'Failed to restore file' }, 500);
+	}
+});
+
+// PATCH /files/rename/key
+router.patch('/rename/:key', async (c) => {
+	try {
+		const { username } = c.get('user');
+		const config = getConfig(c.env);
+		const oldKey = decodeURIComponent(c.req.param('key'));
+		const { newName } = await c.req.json();
+
+		if (!newName || newName.includes('/') || newName.includes('..')) {
+			return c.json({ error: 'Invalid file name' }, 400);
+		}
+		if (!oldKey.startsWith(`users/${username}/`)) {
+			return c.json({ error: 'Unauthorized' }, 403);
+		}
+
+		const newKey = `users/${username}/${newName}`;
+
+		const object = await config.r2.bucket.get(oldKey);
+		if (!object) return c.json({ error: 'File not found' }, 404);
+
+		await config.r2.bucket.put(newKey, object.body, {
+			httpMetadata: object.httpMetadata,
+		});
+		await config.r2.bucket.delete(oldKey);
+
+		const oldMetaKey = `meta:${username}:${oldKey.replace(`users/${username}/`, '')}`;
+		const newMetaKey = `meta:${username}:${newName}`;
+		const meta = await config.kv.fileMeta.get(oldMetaKey, 'json');
+		if (meta) {
+			await config.kv.fileMeta.put(newMetaKey, JSON.stringify(meta));
+			await config.kv.fileMeta.delete(oldMetaKey);
+		}
+		return c.json({ key: newKey, name: newName });
+	} catch (err) {
+		return c.json({ error: 'Rename failed' }, 500);
 	}
 });
 

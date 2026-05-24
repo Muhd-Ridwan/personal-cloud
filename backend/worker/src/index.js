@@ -4,6 +4,7 @@ import { Hono } from 'hono';
 import { corsHeaders } from './middleware.js';
 import authRouter from './routes/auth.js';
 import filesRouter from './routes/files.js';
+import foldersRouter from './routes/folders.js';
 import adminRouter from './routes/admin.js';
 
 const app = new Hono();
@@ -28,6 +29,7 @@ app.use('*', async (c, next) => {
 // Routes
 app.route('/auth', authRouter);
 app.route('/files', filesRouter);
+app.route('/folders', foldersRouter);
 app.route('/admin', adminRouter);
 
 // Health check

@@ -12,6 +12,7 @@ export function getConfig(env) {
 			users: env.USERS,
 			requests: env.REQUESTS,
 			resetTokens: env.RESET_TOKENS,
+			fileMeta: env.FILE_META,
 		},
 		r2: {
 			bucket: env.personal_cloud_files,
