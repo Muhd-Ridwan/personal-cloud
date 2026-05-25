@@ -1,0 +1,9 @@
+name = "personal-cloud"
+compatability_date= "2026-05-14"
+pages_build_output_dir = "./dist"
+
+[env.preview.vars]
+VITE_WORKER_URL = "https://worker.rid1.workers.dev"
+
+[env.production.vars]
+VITE_WORKER_URL = "https://worker.rid1.workers.dev"
