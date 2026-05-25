@@ -2,28 +2,46 @@ name = "worker"
 compatibility_date = "2026-05-14"
 main = "src/index.js"
 workers_dev = true
+upload_source_maps = true
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
 
 # Non-secret vars
 [vars]
-APP_ENV = "production"
+APP_ENV = "development"
 
 
-# KV Namespaces
-[[env.preview.kv_namespaces]]
+# Dev bindings
+[[kv_namespaces]]
 binding = "USERS"
 id = "44288303b97a4a74a0084f3459473dc0"
 
-[[env.preview.kv_namespaces]]
+[[kv_namespaces]]
 binding = "REQUESTS"
 id = "08b134041cdb422cb21df450e5447027"
 
-[[env.preview.kv_namespaces]]
+[[kv_namespaces]]
 binding = "RESET_TOKENS"
 id = "83b083ca862145a588c578baf95db162"
 
-[[env.preview.kv_namespaces]]
+[[kv_namespaces]]
 binding = "FILE_META"
 id = "f2a2044679d24024ac93395cc38faa1c"
+
+# R2 Buckets
+[[r2_buckets]]
+binding = "personal_cloud_files"
+bucket_name = "personal-cloud-files"
+
+
+# Prodcution - deploys as separate worker
+[env.production]
+name = "worker-production"
+
+[env.production.vars]
+APP_ENV = "production"
 
 [[env.production.kv_namespaces]]
 binding = "USERS"
@@ -42,10 +60,6 @@ binding = "FILE_META"
 id = "7c240098e5c349f9870e4a9013fc5b63"
 
 # R2 Buckets
-[[env.preview.r2_buckets]]
-binding = "personal_cloud_files"
-bucket_name = "personal_cloud_files"
-
 [[env.production.r2_buckets]]
 binding = "personal_cloud_files"
-bucket_name = "personal_cloud_files_prod"
+bucket_name = "personal-cloud-files-prod"
