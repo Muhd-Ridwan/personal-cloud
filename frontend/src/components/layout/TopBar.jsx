@@ -43,7 +43,7 @@ export default function TopBar() {
 
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-[#4f8ef7] flex items-center justify-center font-bold text-sm text-white">
-            {user?.name?.[0] ?? "U"}
+            {user?.username?.[0]?.toUpperCase() ?? "U"}
           </div>
           <button
             onClick={logout}
