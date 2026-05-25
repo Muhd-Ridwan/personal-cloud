@@ -6,4 +6,4 @@ pages_build_output_dir = "./dist"
 VITE_WORKER_URL = "https://worker.rid1.workers.dev"
 
 [env.production.vars]
-VITE_WORKER_URL = "https://worker.rid1.workers.dev"
+VITE_WORKER_URL = "https://worker-production.rid1.workers.dev"
