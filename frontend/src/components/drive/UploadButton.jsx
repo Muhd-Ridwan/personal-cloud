@@ -18,9 +18,13 @@ export default function UploadButton({ currentFolderId }) {
     setUploading(true);
     try {
       for (const file of Array.from(fileList)) {
-        await uploadFile(file, (progress) => {
-          console.log(`${file.name}: ${progress}%`);
-        }, currentFolderId);
+        await uploadFile(
+          file,
+          (progress) => {
+            console.log(`${file.name}: ${progress}%`);
+          },
+          currentFolderId,
+        );
       }
     } catch (err) {
       console.error("Upload failed:", err.message);
@@ -53,7 +57,7 @@ export default function UploadButton({ currentFolderId }) {
         onDrop={handleDrop}
         className="relative"
       >
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             variant="primary"
             icon={<Upload size={14} />}
