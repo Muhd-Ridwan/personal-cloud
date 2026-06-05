@@ -119,6 +119,19 @@ export const r2Service = {
     return data;
   },
 
+  async toggleShare(key) {
+    const res = await fetch(
+      `${BASE_URL}/files/share/${encodeURIComponent(key)}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+      },
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to toggle share");
+    return data;
+  },
+
   async trashFile(key) {
     const res = await fetch(
       `${BASE_URL}/files/trash/${encodeURIComponent(key)}`,

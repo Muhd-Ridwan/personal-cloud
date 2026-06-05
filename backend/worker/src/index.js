@@ -6,6 +6,7 @@ import authRouter from './routes/auth.js';
 import filesRouter from './routes/files.js';
 import foldersRouter from './routes/folders.js';
 import adminRouter from './routes/admin.js';
+import { getConfig } from './config.js';
 
 const app = new Hono();
 
@@ -46,6 +47,33 @@ app.notFound((c) => {
 app.onError((err, c) => {
 	console.error(err);
 	return c.json({ error: 'Internal server error' }, 500);
+});
+
+// GET /public/:key
+app.get('/public/:key', async (c) => {
+	const key = decodeURIComponent(c.req.param('key'));
+	if (!key.startsWith('users/')) {
+		return c.json({ error: 'Inavlid Key' }, 400);
+	}
+
+	const parts = key.split('/');
+	const username = parts[1];
+	const filename = parts.slice(2).join('/');
+	const config = getConfig(c.env);
+	const meta = await config.kv.fileMeta.get(`meta:${username}:${filename}`, 'json');
+
+	if (!meta?.public) {
+		return c.json({ error: 'Not Found' }, 404);
+	}
+
+	const object = await config.r2.bucket.get(key);
+	if (!object) return c.json({ error: 'File not found' }, 404);
+
+	const headers = new Headers();
+	headers.set('Content-Type', object.httpMetadata?.contentType || 'application/octet-stream');
+	headers.set('Cache-Control', 'public, max-age=31536000');
+
+	return new Response(object.body, { headers });
 });
 
 export default app;

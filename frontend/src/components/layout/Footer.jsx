@@ -8,7 +8,7 @@ export default function Footer() {
 
   return (
     <>
-      <footer className="h-10 flex items-center justify-between px-6 border-t border-[#1d2229] bg-[#13161b] shrink-0">
+      <footer className="flex items-center justify-between flex-wrap gap-x-4 gap-y-1 px-5 py-2.5 border-t border-[#1d2229] bg-[#13161b] shrink-0">
         {/* Left — copyright */}
         <span className="text-[11.5px] text-[#4a5568]">
           © {new Date().getFullYear()} Orbit Space. All rights reserved.
