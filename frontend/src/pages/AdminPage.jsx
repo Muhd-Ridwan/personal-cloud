@@ -133,7 +133,7 @@ export default function AdminPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#13161b] border border-[#1d2229] rounded-xl p-1 w-fit">
+      <div className="flex flex-wrap gap-1 bg-[#13161b] border border-[#1d2229] rounded-xl p-1 ">
         <button
           onClick={() => setTab("requests")}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer
@@ -190,16 +190,16 @@ export default function AdminPage() {
             requests.map((req) => (
               <div
                 key={req.id}
-                className="bg-[#13161b] border border-[#1d2229] rounded-2xl p-5 flex items-start justify-between gap-4"
+                className="bg-[#13161b] border border-[#1d2229] rounded-2xl p-5 flex items-start justify-between gap-4 overflow-hidden"
               >
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-[#e8eaed] text-sm">
                       {req.username}
                     </span>
                     {getStatusBadge(req.status)}
                   </div>
-                  <span className="text-[12.5px] text-[#8b95a3]">
+                  <span className="text-[12.5px] text-[#8b95a3] truncate">
                     {req.email}
                   </span>
                   <span className="text-[12.5px] text-[#4a5568]">
