@@ -1,15 +1,30 @@
 import { useState } from "react";
-import { Star, MoreVertical, Trash2, Download, Pencil } from "lucide-react";
+import {
+  Star,
+  MoreVertical,
+  Trash2,
+  Download,
+  Pencil,
+  Link,
+  Link2Off,
+} from "lucide-react";
 import FileIcon from "../ui/FileIcon";
 import ContextMenu from "../ui/ContextMenu";
 import { useDrive } from "../../context/DriveContext";
 import { formatFileSize } from "../../utils/fileUtils";
 import { r2Service } from "../../services/r2Service";
 import Modal from "../ui/Modal";
+const BASE_URL = import.meta.env.VITE_WORKER_URL || "http://localhost:8787";
 
 export default function FileGrid({ files, onFolderOpen }) {
-  const { selectedIds, toggleSelect, toggleStar, moveToTrash, renameFile } =
-    useDrive();
+  const {
+    selectedIds,
+    toggleSelect,
+    toggleStar,
+    moveToTrash,
+    renameFile,
+    toggleShare,
+  } = useDrive();
   const [menu, setMenu] = useState(null); // { x, y, file }
   const [renaming, setRenaming] = useState(null);
 
@@ -37,6 +52,33 @@ export default function FileGrid({ files, onFolderOpen }) {
         label: file.starred ? "Unstar" : "Star",
         onClick: () => toggleStar(file.id),
       },
+      {
+        icon: <Link size={14} />,
+        label: "Copy Link",
+        onClick: async () => {
+          if (file.public) {
+            await navigator.clipboard.writeText(
+              `${BASE_URL}/public/${encodeURIComponent(file.key)}`,
+            );
+          } else {
+            await toggleShare(file.id);
+            await navigator.clipboard.writeText(
+              `${BASE_URL}/public/${encodeURIComponent(file.key)}`,
+            );
+          }
+        },
+        disabled: file.type === "folder",
+      },
+      ...(file.public
+        ? [
+            {
+              icon: <Link2Off size={14} />,
+              label: "Unshare",
+              onClick: () => toggleShare(file.id),
+              disabled: file.type === "folder",
+            },
+          ]
+        : []),
       { divider: true },
       {
         icon: <Trash2 size={14} />,

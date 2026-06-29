@@ -27,6 +27,7 @@ router.get('/', async (c) => {
 					starred: meta?.starred ?? false,
 					trashed: meta?.trashed ?? false,
 					folderId: meta?.folderId ?? null,
+					public: meta?.public ?? false,
 				};
 			}),
 		);
@@ -121,6 +122,25 @@ router.patch('/star/:key', async (c) => {
 		return c.json({ starred });
 	} catch (err) {
 		return c.json({ error: 'Failed to toggle star' }, 500);
+	}
+});
+
+// PATCH /files/share/:key - toggle public flag
+router.patch('/share/:key', async (c) => {
+	try {
+		const { username } = c.get('user');
+		const config = getConfig(c.env);
+		const key = decodeURIComponent(c.req.param('key'));
+		const filename = key.replace(`users/${username}/`, '');
+		const metaKey = `meta:${username}:${filename}`;
+
+		const existing = (await config.kv.fileMeta.get(metaKey, 'json')) || {};
+		const isPublic = !existing.public;
+		await config.kv.fileMeta.put(metaKey, JSON.stringify({ ...existing, public: isPublic }));
+
+		return c.json({ public: isPublic });
+	} catch (err) {
+		return c.json({ error: 'Failed to toggle share' }, 500);
 	}
 });
 

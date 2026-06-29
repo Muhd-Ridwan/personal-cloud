@@ -93,6 +93,19 @@ export function DriveProvider({ children }) {
     [files],
   );
 
+  const toggleShare = useCallback(
+    async (id) => {
+      const file = files.find((f) => f.id === id);
+      if (!file || file.type === "folder") return;
+      const { public: isPublic } = await r2Service.toggleShare(file.key);
+      setFiles((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, public: isPublic } : f)),
+      );
+      return isPublic;
+    },
+    [files],
+  );
+
   const moveToTrash = useCallback(
     async (id) => {
       const file = files.find((f) => f.id === id);
@@ -219,6 +232,7 @@ export function DriveProvider({ children }) {
         createFolder,
         renameFile,
         fetchFiles,
+        toggleShare,
       }}
     >
       {children}
