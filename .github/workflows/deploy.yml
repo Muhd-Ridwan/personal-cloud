@@ -1,0 +1,34 @@
+name: Deploy Backend Worker
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/worker/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: npm Install
+        working-directory: backend/worker
+
+      - name: Run Tests
+        run: npm test
+        working-directory: backend/worker
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    stpes:
+      - uses: actions/checkout@v4
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: backend/worker
+          command: deploy --env production
