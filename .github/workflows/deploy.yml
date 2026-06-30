@@ -24,7 +24,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: test
-    stpes:
+    steps:
       - uses: actions/checkout@v4
       - name: Deploy Worker
         uses: cloudflare/wrangler-action@v3
