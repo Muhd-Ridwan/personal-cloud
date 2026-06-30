@@ -170,12 +170,12 @@ router.get('/google/callback', async (c) => {
 
 		const existing = await config.kv.users.get(username);
 		if (!existing) {
-			return c.redirect(`http://localhost:5173/login?newgoogle=true&email=${encodeURIComponent(username)}`);
+			return c.redirect(`${config.frontendUrl}/login?newgoogle=true&email=${encodeURIComponent(username)}`);
 		}
 
 		const token = await createJWT({ username }, config.jwt.secret);
 
-		return c.redirect(`http://localhost:5173/auth/callback?token=${token}&username=${encodeURIComponent(username)}`);
+		return c.redirect(`${config.frontendUrl}/auth/callback?token=${token}&username=${encodeURIComponent(username)}`);
 	} catch (err) {
 		console.log('Google callback error:', err.message);
 		return c.json({ error: 'Google login failed' }, 500);
@@ -249,7 +249,7 @@ router.post('/forgot-password', async (c) => {
 		const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 		await config.kv.resetTokens.put(token, JSON.stringify({ username: matchedUsername, email, expiresAt }), { expirationTtl: 3600 });
 
-		const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+		const resetLink = `${config.frontendUrl}/reset-password?token=${token}`;
 		await sendResetEmail(email, resetLink, config.email.resendApiKey, config.email.fromAddress);
 
 		return c.json({ success: true, message: 'If that email exists, a reset link has been sent' });

@@ -8,6 +8,7 @@ export function getConfig(env) {
 			clientSecret: env.GOOGLE_CLIENT_SECRET,
 			redirectUri: env.GOOGLE_REDIRECT_URI,
 		},
+		frontendUrl: env.FRONTEND_URL || 'http://localhost:5173',
 		kv: {
 			users: env.USERS,
 			requests: env.REQUESTS,

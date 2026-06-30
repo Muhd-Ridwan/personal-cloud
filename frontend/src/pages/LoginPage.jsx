@@ -47,7 +47,9 @@ export default function LoginPage() {
   }
 
   function handleGoogleLogin() {
-    window.location.href = "http://localhost:8787/auth/google";
+    const workerUrl =
+      import.meta.env.VITE_WORKER_URL || "http://localhost:8787";
+    window.location.href = `${workerUrl}/auth/google`;
   }
 
   return (
