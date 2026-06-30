@@ -5,6 +5,11 @@ export default defineWorkersConfig({
 		poolOptions: {
 			workers: {
 				wrangler: { configPath: './wrangler.toml' },
+				miniflare: {
+					bindings: {
+						JWT_SECRET: 'test-secret',
+					},
+				},
 			},
 		},
 	},
