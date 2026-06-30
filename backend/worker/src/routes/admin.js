@@ -116,6 +116,7 @@ router.get('/users', async (c) => {
 
 				return {
 					username: user.username,
+					kvKey: key.name,
 					email: user.email,
 					role: user.role,
 					createdAt: user.createdAt,

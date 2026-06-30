@@ -307,7 +307,7 @@ export default function AdminPage() {
                       size="sm"
                       icon={<Trash2 size={13} />}
                       loading={actionLoading === u.username}
-                      onClick={() => handleDeleteUser(u.username)}
+                      onClick={() => handleDeleteUser(u.kvKey || u.username)}
                     >
                       Delete
                     </Button>
