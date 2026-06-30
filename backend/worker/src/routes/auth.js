@@ -183,7 +183,9 @@ router.get('/google/callback', async (c) => {
 		}
 
 		const token = await createJWT({ username: foundUser.username }, config.jwt.secret);
-		return c.redirect(`${config.frontendUrl}/auth/callback?token=${token}&username=${encodeURIComponent(foundUser.username)}`);
+		return c.redirect(
+			`${config.frontendUrl}/auth/callback?token=${encodeURIComponent(token)}&username=${encodeURIComponent(foundUser.username)}`,
+		);
 	} catch (err) {
 		console.log('Google callback error:', err.message);
 		return c.json({ error: 'Google login failed' }, 500);
