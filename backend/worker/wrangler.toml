@@ -42,6 +42,7 @@ name = "worker-production"
 
 [env.production.vars]
 APP_ENV = "production"
+FRONTEND_URL = "https://personal-cloud.dev-r.rog"
 
 [[env.production.kv_namespaces]]
 binding = "USERS"
@@ -63,8 +64,3 @@ id = "7c240098e5c349f9870e4a9013fc5b63"
 [[env.production.r2_buckets]]
 binding = "personal_cloud_files"
 bucket_name = "personal-cloud-files-prod"
-
-# Frontend URL
-[[env.production.vars]]
-APP_ENV = "production"
-FRONTEND_URL = "https://personal-cloud.dev-r.rog"
