@@ -166,16 +166,24 @@ router.get('/google/callback', async (c) => {
 		});
 
 		const googleUser = await userRes.json();
-		const username = googleUser.email;
+		const email = googleUser.email;
 
-		const existing = await config.kv.users.get(username);
-		if (!existing) {
-			return c.redirect(`${config.frontendUrl}/login?newgoogle=true&email=${encodeURIComponent(username)}`);
+		const list = await config.kv.users.list();
+		let foundUser = null;
+		for (const key of list.keys) {
+			const raw = await config.kv.users.get(key.name);
+			const user = JSON.parse(raw);
+			if (user.email === email) {
+				foundUser = user;
+				break;
+			}
+		}
+		if (!foundUser) {
+			return c.redirect(`${config.frontendUrl}/login?newgoogle=true&email=${encodeURIComponent(email)}`);
 		}
 
-		const token = await createJWT({ username }, config.jwt.secret);
-
-		return c.redirect(`${config.frontendUrl}/auth/callback?token=${token}&username=${encodeURIComponent(username)}`);
+		const token = await createJWT({ username: foundUser.username }, config.jwt.secret);
+		return c.redirect(`${config.frontendUrl}/auth/callback?token=${token}&username=${encodeURIComponent(foundUser.username)}`);
 	} catch (err) {
 		console.log('Google callback error:', err.message);
 		return c.json({ error: 'Google login failed' }, 500);
