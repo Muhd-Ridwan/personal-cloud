@@ -1,3 +1,4 @@
+// .
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware.js';
 import { hashPassword, generateSalt, createJWT } from '../auth.js';
