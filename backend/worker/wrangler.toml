@@ -42,7 +42,7 @@ name = "worker-production"
 
 [env.production.vars]
 APP_ENV = "production"
-FRONTEND_URL = "https://personal-cloud.dev-r.rog"
+FRONTEND_URL = "https://personal-cloud.dev-r.org"
 
 [[env.production.kv_namespaces]]
 binding = "USERS"
