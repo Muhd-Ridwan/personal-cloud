@@ -10,6 +10,13 @@ A self-hosted cloud storage app built with React + Cloudflare Workers + R2.
 - **Auth** — JWT, Google OAuth
 
 ---
+<p>Login</p>
+<img width="604" height="730" alt="image" src="https://github.com/user-attachments/assets/573185e2-89d7-496a-b14d-496af1825a89" />
+<p>Content Dashboard</p>
+<img width="2559" height="384" alt="image" src="https://github.com/user-attachments/assets/e70a33ff-d8c7-4794-8d41-24fdeca32823" />
+
+---
+
 
 ## Project Structure
 
